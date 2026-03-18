@@ -101,3 +101,21 @@ Notas:
 
 - O frontend precisa de apontar para o backend (`API_BASE_URL` em `config.js`) para esta integração acontecer.
 - Se `APP_ODOO_ENABLED=false`, o backend ignora Odoo.
+
+## Base de dados da API (simples)
+
+O backend usa uma base de dados H2 local em ficheiro para guardar os submits:
+
+- caminho default: `./data/oficina.mv.db`
+- tabela principal: `quote_submission`
+- estado por submit: `PROCESSING`, `SUCCESS`, `FAILED`
+
+Configuração default (já ativa):
+
+- `spring.datasource.url=jdbc:h2:file:./data/oficina...`
+- `spring.jpa.hibernate.ddl-auto=update`
+
+Opcional:
+
+- ativar consola H2: `H2_CONSOLE_ENABLED=true`
+- abrir em: `/h2-console`
