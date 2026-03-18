@@ -448,6 +448,7 @@
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/suncalc@1.9.0/suncalc.js"></script>
+<script src="config.js"></script>
 <script>
   const form = document.getElementById("geocode-form");
   const addressInput = document.getElementById("address");
@@ -460,6 +461,12 @@
   const nextStepBtn = document.getElementById("nextStepBtn");
   const roofPanel = document.getElementById("roofPanel");
   const stepTrack = document.getElementById("stepTrack");
+  const API_BASE_URL = String((window.APP_CONFIG && window.APP_CONFIG.API_BASE_URL) || "").trim().replace(/\/+$/, "");
+  const HAS_BACKEND = API_BASE_URL.length > 0;
+
+  function apiUrl(path) {
+    return `${API_BASE_URL}${path}`;
+  }
 
   const map = L.map("map", {
     zoomControl: true,
@@ -577,6 +584,10 @@
   }
 
   async function fetchSuggestions(query) {
+    if (!HAS_BACKEND) {
+      return await fetchNominatimSuggestions(query);
+    }
+
     if (suggestionAbort) {
       suggestionAbort.abort();
     }
@@ -584,7 +595,7 @@
     const timeoutId = setTimeout(() => suggestionAbort.abort(), 8000);
 
     try {
-      const response = await fetch(`/api/geocode/suggest?address=${encodeURIComponent(query)}`, {
+      const response = await fetch(apiUrl(`/api/geocode/suggest?address=${encodeURIComponent(query)}`), {
         signal: suggestionAbort.signal
       });
       if (!response.ok) {
@@ -1140,11 +1151,21 @@
     message.textContent = "A procurar...";
     clearSuggestions();
 
+    if (!HAS_BACKEND) {
+      try {
+        const fallback = await fetchNominatimGeocode(address);
+        applyGeocodeResult(fallback);
+      } catch (error) {
+        message.textContent = error.message || "Nao foi possivel obter coordenadas.";
+      }
+      return;
+    }
+
     try {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 8000);
       try {
-        const response = await fetch(`/api/geocode?address=${encodeURIComponent(address)}`, {
+        const response = await fetch(apiUrl(`/api/geocode?address=${encodeURIComponent(address)}`), {
           signal: controller.signal
         });
         const data = await response.json();
