@@ -1,0 +1,63 @@
+package com.oficina.backend.controller;
+
+import com.oficina.backend.model.QuoteEmailRequest;
+import com.oficina.backend.service.QuoteEmailService;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+@RestController
+@RequestMapping("/api/quote")
+@CrossOrigin
+public class QuoteController {
+
+    private final QuoteEmailService quoteEmailService;
+
+    public QuoteController(QuoteEmailService quoteEmailService) {
+        this.quoteEmailService = quoteEmailService;
+    }
+
+    @PostMapping("/email")
+    public ResponseEntity<?> sendQuoteEmail(@RequestBody QuoteEmailRequest request) {
+        if (isBlank(request.getClientName()) || isBlank(request.getClientEmail())) {
+            return ResponseEntity.badRequest().body("Campos obrigatórios: clientName, clientEmail.");
+        }
+        if (isBlank(request.getClientNif())) {
+            return ResponseEntity.badRequest().body("Campo obrigatório: clientNif.");
+        }
+        if (!request.getClientNif().trim().matches("\\d{9}")) {
+            return ResponseEntity.badRequest().body("Campo inválido: clientNif deve ter 9 dígitos.");
+        }
+
+        try {
+            boolean sent = quoteEmailService.sendQuotePdf(request);
+            if (sent) {
+                return ResponseEntity.ok("Email enviado com sucesso para cliente e empresa.");
+            }
+            return ResponseEntity.ok("SMTP não configurado: PDF gerado e fluxo concluído em modo teste.");
+        } catch (IllegalArgumentException ex) {
+            return ResponseEntity.badRequest().body(ex.getMessage());
+        } catch (IllegalStateException ex) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.getMessage());
+        } catch (Exception ex) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Falha ao enviar email: " + rootMessage(ex));
+        }
+    }
+
+    private boolean isBlank(String value) {
+        return value == null || value.isBlank();
+    }
+
+    private String rootMessage(Throwable throwable) {
+        Throwable current = throwable;
+        while (current.getCause() != null) {
+            current = current.getCause();
+        }
+        return current.getMessage() != null ? current.getMessage() : throwable.getMessage();
+    }
+}
