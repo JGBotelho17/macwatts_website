@@ -371,9 +371,26 @@
       body: JSON.stringify(payload)
     });
 
+    let responseBody = null;
+    try {
+      responseBody = await response.json();
+    } catch (error) {
+      responseBody = null;
+    }
+
     if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(errorText || "Erro no envio do email.");
+      const errorMessage = responseBody && responseBody.message
+        ? responseBody.message
+        : "Erro no envio do email.";
+      throw new Error(errorMessage);
+    }
+
+    const isSuccess = responseBody && (responseBody.success === true || responseBody.success === "true");
+    if (!isSuccess) {
+      const formSubmitMessage = responseBody && responseBody.message
+        ? responseBody.message
+        : "FormSubmit recusou o pedido.";
+      throw new Error(formSubmitMessage);
     }
   }
 
