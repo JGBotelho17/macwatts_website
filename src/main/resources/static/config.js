@@ -3,5 +3,5 @@ window.APP_CONFIG = window.APP_CONFIG || {
   // API_BASE_URL: "https://your-backend-domain.com"
   API_BASE_URL: "",
   // Email que recebe os pedidos quando nao existe backend.
-  QUOTE_EMAIL_TO: "macwattsteste@gmail.com"
+  QUOTE_EMAIL_TO: "macwattstestes@gmail.com"
 };
