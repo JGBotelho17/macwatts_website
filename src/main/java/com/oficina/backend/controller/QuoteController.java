@@ -1,7 +1,10 @@
 package com.oficina.backend.controller;
 
 import com.oficina.backend.model.QuoteEmailRequest;
+import com.oficina.backend.service.OdooCrmService;
 import com.oficina.backend.service.QuoteEmailService;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -14,9 +17,11 @@ import org.springframework.web.bind.annotation.RestController;
 public class QuoteController {
 
     private final QuoteEmailService quoteEmailService;
+    private final OdooCrmService odooCrmService;
 
-    public QuoteController(QuoteEmailService quoteEmailService) {
+    public QuoteController(QuoteEmailService quoteEmailService, OdooCrmService odooCrmService) {
         this.quoteEmailService = quoteEmailService;
+        this.odooCrmService = odooCrmService;
     }
 
     @PostMapping("/email")
@@ -33,17 +38,27 @@ public class QuoteController {
 
         try {
             boolean sent = quoteEmailService.sendQuotePdf(request);
-            if (sent) {
-                return ResponseEntity.ok("Email enviado com sucesso para cliente e empresa.");
-            }
-            return ResponseEntity.ok("SMTP não configurado: PDF gerado e fluxo concluído em modo teste.");
+            OdooCrmService.SyncResult odooResult = odooCrmService.syncLeadAndContact(request);
+
+            Map<String, Object> response = new LinkedHashMap<>();
+            response.put("emailSent", sent);
+            response.put("odooConfigured", odooResult.configured());
+            response.put("odooSuccess", odooResult.success());
+            response.put("odooMessage", odooResult.message());
+            response.put(
+                "message",
+                sent
+                    ? "Pedido processado: email enviado e integração Odoo executada."
+                    : "Pedido processado: SMTP não configurado; integração Odoo executada."
+            );
+            return ResponseEntity.ok(response);
         } catch (IllegalArgumentException ex) {
             return ResponseEntity.badRequest().body(ex.getMessage());
         } catch (IllegalStateException ex) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.getMessage());
         } catch (Exception ex) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Falha ao enviar email: " + rootMessage(ex));
+                .body("Falha ao processar pedido: " + rootMessage(ex));
         }
     }
 

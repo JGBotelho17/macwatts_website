@@ -81,3 +81,23 @@ Define a variável de ambiente no serviço do backend:
 Se necessário, podes passar múltiplos domínios separados por vírgula:
 
 `APP_CORS_ALLOWED_ORIGINS=https://<teu-utilizador>.github.io,https://www.teu-dominio.com`
+
+## Integracao com Odoo (Contacto + Lead CRM)
+
+Quando o frontend envia para `POST /api/quote/email`, o backend pode:
+
+1. enviar email (SMTP), e
+2. criar/atualizar um contacto em `res.partner` e criar uma lead em `crm.lead`.
+
+Ativa no ambiente do backend:
+
+- `APP_ODOO_ENABLED=true`
+- `APP_ODOO_BASE_URL=https://teu-odoo.com`
+- `APP_ODOO_DB=nome_da_base`
+- `APP_ODOO_USERNAME=utilizador_odoo`
+- `APP_ODOO_PASSWORD=password_ou_api_key`
+
+Notas:
+
+- O frontend precisa de apontar para o backend (`API_BASE_URL` em `config.js`) para esta integração acontecer.
+- Se `APP_ODOO_ENABLED=false`, o backend ignora Odoo.
