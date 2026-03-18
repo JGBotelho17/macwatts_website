@@ -32,19 +32,28 @@ public class OdooCrmService {
     private final String database;
     private final String username;
     private final String password;
+    private final String crmRecordType;
+    private final Integer crmTeamId;
+    private final Integer crmUserId;
 
     public OdooCrmService(
         @Value("${app.odoo.enabled:false}") boolean enabled,
         @Value("${app.odoo.base-url:}") String baseUrl,
         @Value("${app.odoo.db:}") String database,
         @Value("${app.odoo.username:}") String username,
-        @Value("${app.odoo.password:}") String password
+        @Value("${app.odoo.password:}") String password,
+        @Value("${app.odoo.crm.record-type:opportunity}") String crmRecordType,
+        @Value("${app.odoo.crm.team-id:0}") Integer crmTeamId,
+        @Value("${app.odoo.crm.user-id:0}") Integer crmUserId
     ) {
         this.enabled = enabled;
         this.baseUrl = trim(baseUrl);
         this.database = trim(database);
         this.username = trim(username);
         this.password = trim(password);
+        this.crmRecordType = trim(crmRecordType);
+        this.crmTeamId = crmTeamId;
+        this.crmUserId = crmUserId;
     }
 
     public SyncResult syncLeadAndContact(QuoteEmailRequest request) throws Exception {
@@ -109,12 +118,18 @@ public class OdooCrmService {
     private Integer createLead(Integer uid, Integer partnerId, QuoteEmailRequest request) throws Exception {
         Map<String, Object> vals = new LinkedHashMap<>();
         vals.put("name", "Pedido Website - " + safe(request.getClientName(), "Sem nome"));
-        vals.put("type", "lead");
+        vals.put("type", resolveCrmRecordType());
         vals.put("partner_id", partnerId);
         putIfNotBlank(vals, "contact_name", request.getClientName());
         putIfNotBlank(vals, "email_from", request.getClientEmail());
         putIfNotBlank(vals, "phone", request.getClientPhone());
         vals.put("description", buildLeadDescription(request));
+        if (crmTeamId != null && crmTeamId > 0) {
+            vals.put("team_id", crmTeamId);
+        }
+        if (crmUserId != null && crmUserId > 0) {
+            vals.put("user_id", crmUserId);
+        }
 
         Object created = executeKw(uid, "crm.lead", "create", List.of(vals), Map.of());
         if (!(created instanceof Number)) {
@@ -228,6 +243,11 @@ public class OdooCrmService {
 
     private String formatCoord(Double value) {
         return String.format(Locale.ROOT, "%.6f", value);
+    }
+
+    private String resolveCrmRecordType() {
+        String normalized = crmRecordType.toLowerCase(Locale.ROOT);
+        return "lead".equals(normalized) ? "lead" : "opportunity";
     }
 
     private void putIfNotBlank(Map<String, Object> vals, String key, String value) {

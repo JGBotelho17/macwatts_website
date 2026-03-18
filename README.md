@@ -96,6 +96,9 @@ Ativa no ambiente do backend:
 - `APP_ODOO_DB=nome_da_base`
 - `APP_ODOO_USERNAME=utilizador_odoo`
 - `APP_ODOO_PASSWORD=password_ou_api_key`
+- `APP_ODOO_CRM_RECORD_TYPE=opportunity` (ou `lead`)
+- `APP_ODOO_CRM_TEAM_ID=0` (opcional, para forçar canal/equipa no Kanban)
+- `APP_ODOO_CRM_USER_ID=0` (opcional, para forçar vendedor)
 
 Notas:
 
