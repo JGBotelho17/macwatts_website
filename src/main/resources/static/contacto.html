@@ -392,6 +392,8 @@
         : "FormSubmit recusou o pedido.";
       throw new Error(formSubmitMessage);
     }
+
+    return responseBody;
   }
 
   let roofData = loadStoredJson("roofSelection");
@@ -581,6 +583,7 @@
     statusEl.textContent = "A enviar pedido por email...";
 
     try {
+      let providerResponse = null;
       if (HAS_BACKEND) {
         const response = await fetch(apiUrl("/api/quote/email"), {
           method: "POST",
@@ -610,7 +613,7 @@
           throw new Error(errorText || "Erro no envio do email.");
         }
       } else {
-        await sendQuoteWithFormSubmit(clientData);
+        providerResponse = await sendQuoteWithFormSubmit(clientData);
       }
 
       const keysToClear = [
@@ -626,11 +629,20 @@
         localStorage.removeItem(key);
       });
 
-      statusEl.textContent = "";
-      setTimeout(() => {
-        window.location.href = "geocoding.html";
-      }, 1200);
+      if (HAS_BACKEND) {
+        statusEl.textContent = "";
+        setTimeout(() => {
+          window.location.href = "geocoding.html";
+        }, 1200);
+      } else {
+        const providerMessage = providerResponse && providerResponse.message
+          ? providerResponse.message
+          : "Pedido enviado com sucesso. Verifica a caixa de entrada e spam do email configurado.";
+        statusEl.textContent = providerMessage;
+        statusEl.style.color = "#065f46";
+      }
     } catch (error) {
+      statusEl.style.color = "#b91c1c";
       statusEl.textContent = `Falhou o envio por email: ${error.message || "erro desconhecido"}`;
       console.error("Erro ao enviar pedido por email:", error);
     }
